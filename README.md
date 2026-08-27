@@ -1,7 +1,6 @@
 # LLM Gateway
 
-<!-- CI badge: swap in your GitHub owner/repo once this is pushed --
-     ![CI](https://github.com/<owner>/<repo>/actions/workflows/ci.yml/badge.svg) -->
+[![CI](https://github.com/exwaized/Llm-Gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/exwaized/Llm-Gateway/actions/workflows/ci.yml)
 
 A cost-aware LLM inference router: it scores each request for complexity,
 routes it to the cheapest model tier that can plausibly handle it, serves
