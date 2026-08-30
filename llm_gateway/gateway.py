@@ -44,12 +44,13 @@ class Gateway:
         providers_by_tier: dict[Tier, list[Provider]],
         telemetry: Telemetry | None = None,
         cache: SemanticCache | None = None,
+        breakers: CircuitBreakerRegistry | None = None,
     ):
         self._config = config
         self._classifier = classifier
         self._providers_by_tier = providers_by_tier
         self._cache = cache or SemanticCache(config.cache)
-        self._breakers = CircuitBreakerRegistry(config.breaker)
+        self._breakers = breakers or CircuitBreakerRegistry(config.breaker)
         self._router = Router(providers_by_tier, self._breakers, config.thresholds)
         self._telemetry = telemetry or Telemetry()
         self._executor = ThreadPoolExecutor(max_workers=config.max_workers)

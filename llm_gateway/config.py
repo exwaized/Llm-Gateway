@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -42,6 +43,21 @@ class ClassifierThresholds:
     # score in [0, 1]; below cheap_max -> CHEAP, below mid_max -> MID, else FRONTIER
     cheap_max: float = 0.35
     mid_max: float = 0.70
+
+    def __post_init__(self) -> None:
+        if not (0.0 <= self.cheap_max <= self.mid_max <= 1.0):
+            raise ValueError(
+                f"invalid thresholds: require 0 <= cheap_max <= mid_max <= 1, "
+                f"got cheap_max={self.cheap_max}, mid_max={self.mid_max}"
+            )
+
+    @staticmethod
+    def from_env() -> "ClassifierThresholds":
+        """Reads GATEWAY_CHEAP_MAX / GATEWAY_MID_MAX, falling back to the defaults."""
+        defaults = ClassifierThresholds()
+        cheap_max = float(os.environ.get("GATEWAY_CHEAP_MAX", defaults.cheap_max))
+        mid_max = float(os.environ.get("GATEWAY_MID_MAX", defaults.mid_max))
+        return ClassifierThresholds(cheap_max=cheap_max, mid_max=mid_max)
 
 
 @dataclass

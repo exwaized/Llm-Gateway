@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import logging
 import threading
 import time
 from enum import Enum
 
 from llm_gateway.config import BreakerConfig
+
+_logger = logging.getLogger("llm_gateway.breaker")
 
 
 class BreakerState(str, Enum):
@@ -90,6 +93,10 @@ class CircuitBreaker:
     def _trip_locked(self) -> None:
         self._state = BreakerState.OPEN
         self._opened_at = time.monotonic()
+        _logger.warning(
+            "circuit breaker tripped",
+            extra={"fields": {"provider": self.name, "consecutive_failures": self._consecutive_failures}},
+        )
 
     def call(self, fn, *args, **kwargs):
         """Convenience wrapper: before_call -> fn -> record_success/record_failure."""
