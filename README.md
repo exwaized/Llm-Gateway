@@ -8,8 +8,13 @@ repeat/near-duplicate requests from a semantic cache instead of calling a
 model at all, and falls back to a healthier tier when a provider is failing
 — all in ~700 lines of dependency-free Python.
 
-Zero required dependencies. Runs entirely offline against `MockProvider` for
-tests and demos; `openai`/`anthropic` are optional extras for real traffic.
+The core library (`classifier/`, `cache/`, `router/`, `breaker/`, `gateway.py`)
+imports nothing beyond the standard library and runs entirely offline against
+`MockProvider` for tests and demos; `openai`/`anthropic` are optional extras
+for real traffic. `fastapi`/`upstash-redis` are unconditional install
+dependencies (not extras) only because they back the optional `llm_gateway.api`
+HTTP wrapper and Vercel's Python builder installs pyproject.toml's core
+`dependencies` but not optional extras — see `llm_gateway/api.py`'s docstring.
 
 ## Why this exists
 
@@ -174,9 +179,10 @@ with Gateway(GatewayConfig(), HeuristicClassifier(), providers_by_tier) as gatew
 ## Install
 
 ```
-pip install -e ".[dev]"      # + pytest, for running the test suite
+pip install -e ".[dev]"      # + pytest/httpx, for running the test suite
 pip install -e ".[openai]"   # to use the real OpenAI provider
 pip install -e ".[anthropic]"  # to use the real Anthropic provider
+pip install -e ".[api]"      # + uvicorn, to run llm_gateway.api locally (fastapi/upstash-redis are core deps)
 ```
 
 ## Project layout

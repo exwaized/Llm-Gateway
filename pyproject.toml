@@ -3,13 +3,16 @@ name = "llm-gateway"
 version = "0.1.0"
 description = "Cost-aware LLM inference router: complexity-based tiering, semantic caching, circuit breaking, graceful fallback."
 requires-python = ">=3.10"
-dependencies = []
+# fastapi/upstash-redis live here (not in optional-dependencies) because
+# Vercel's Python builder installs only pyproject.toml's core
+# `dependencies` -- it does not install extras, so the api.py wrapper's
+# deps must be unconditional for the Vercel deployment to have them.
+dependencies = ["fastapi>=0.110", "upstash-redis>=1.0"]
 
 [project.optional-dependencies]
 openai = ["openai>=1.0"]
 anthropic = ["anthropic>=0.25"]
-api = ["fastapi>=0.110", "uvicorn>=0.29"]
-redis = ["upstash-redis>=1.0"]
+api = ["uvicorn>=0.29"]
 dev = ["pytest>=7.0", "httpx>=0.27"]
 
 [build-system]
