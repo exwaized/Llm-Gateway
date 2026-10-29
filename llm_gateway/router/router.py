@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from llm_gateway.breaker.circuit_breaker import CircuitBreakerRegistry, CircuitOpenError
 from llm_gateway.config import TIER_ORDER, ClassifierThresholds, Tier
 from llm_gateway.providers.base import Provider, ProviderError, ProviderResponse
+from llm_gateway.router.policies import RoutingPolicy, ThresholdPolicy, tier_for_score  # noqa: F401
 
 
 class AllProvidersExhaustedError(Exception):
@@ -37,14 +38,6 @@ class RouteResult:
         return self.attempts[0].tier != self.attempts[-1].tier
 
 
-def tier_for_score(score: float, thresholds: ClassifierThresholds) -> Tier:
-    if score < thresholds.cheap_max:
-        return Tier.CHEAP
-    if score < thresholds.mid_max:
-        return Tier.MID
-    return Tier.FRONTIER
-
-
 class Router:
     """Picks a tier from a complexity score, then dispatches with fallback.
 
@@ -61,17 +54,19 @@ class Router:
         providers_by_tier: dict[Tier, list[Provider]],
         breaker_registry: CircuitBreakerRegistry,
         thresholds: ClassifierThresholds | None = None,
+        policy: RoutingPolicy | None = None,
     ):
         self._providers_by_tier = providers_by_tier
         self._breakers = breaker_registry
-        self._thresholds = thresholds or ClassifierThresholds()
+        # An explicit policy wins; otherwise keep the original threshold behaviour.
+        self._policy = policy or ThresholdPolicy(thresholds)
 
     def _tiers_from(self, start_tier: Tier) -> list[Tier]:
         start_idx = TIER_ORDER.index(start_tier)
         return TIER_ORDER[start_idx:]
 
     def route(self, prompt: str, score: float, **kwargs) -> RouteResult:
-        start_tier = tier_for_score(score, self._thresholds)
+        start_tier = self._policy.choose_tier(prompt, score)
         attempts: list[RouteAttempt] = []
 
         for tier in self._tiers_from(start_tier):
