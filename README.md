@@ -83,7 +83,7 @@ router: tier_for_score(score) → try providers in that tier
 Two runnable, offline demos back the numbers below — nothing here requires
 API keys.
 
-### Cost: gateway vs. always-call-the-frontier-model
+### Cost: gateway vs. always-call-the-frontier-model (synthetic workload)
 
 `python examples/benchmark.py` replays a synthetic 300-request support/
 assistant workload (55% simple lookups, 30% moderate comparisons, 15%
@@ -114,6 +114,34 @@ the $ figures are representative of real spend even though the calls
 themselves are simulated. The 93.4% figure is workload-dependent (it moves
 with cache hit rate and how much traffic is actually simple); re-run with
 your own prompt mix to see how it moves.
+
+### Cost on real prompts (databricks-dolly-15k)
+
+`python examples/benchmark_real.py path/to/databricks-dolly-15k.jsonl` replays 3,000 prompts
+sampled from [Dolly-15k](https://huggingface.co/datasets/databricks/databricks-dolly-15k)
+(real human-written instructions, 8 task categories) through the same gateway and pricing:
+
+```
+3000 real prompts sampled from dolly-15k (seed=7), 2988 unique
+modelled cost, gateway:        $1.6944
+modelled cost, frontier-only:  $10.7430
+modelled savings:              84.2%
+cache hit rate:                1.4%
+tier distribution:             {'cheap': 2280, 'mid': 654, 'frontier': 23}
+```
+
+What this shows, and what it does not:
+* **The 93% figure above does not carry over, but most of it does.** It relied on a 78% cache hit
+  rate from a hand-built, Zipf-repeated prompt mix. Real, unrepeated prompts hit the cache only
+  1.4% of the time; the 84% saving comes almost entirely from **routing**: 76% of prompts went to
+  the cheap tier.
+* **Quality is not measured.** The saving is real only if the cheap tier answers those prompts
+  well enough. The heuristic classifier scores on length and keywords, and it sent ~99% of
+  brainstorming and 100% of creative-writing prompts to the cheap tier. Whether that is
+  acceptable needs a quality evaluation (for example an LLM-judge or human-rated sample) before
+  you rely on the number.
+* **Dollar figures are modelled**, not a bill: replies come from `MockProvider` and prices are
+  representative per-token rates (see the constants in `examples/benchmark.py`).
 
 ### Resilience: fallback and escalation under a provider failure
 
